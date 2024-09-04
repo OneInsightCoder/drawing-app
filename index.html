@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fancy HTML Drawing App</title>
+    <title>Drawing App</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -38,7 +38,7 @@
             border-radius: 50%;
             cursor: pointer;
         }
-        #brush-size {
+        #brush-size, #eraser-size {
             width: 200px;
         }
         button {
@@ -58,6 +58,9 @@
         button:hover {
             background-color: #45a049;
         }
+        .active {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
@@ -73,6 +76,13 @@
             <input type="range" id="brush-size" min="1" max="50" value="5">
             <span id="brush-size-value">5</span>
         </div>
+        <div class="control-group">
+            <label for="eraser-size">Eraser Size:</label>
+            <input type="range" id="eraser-size" min="1" max="50" value="20">
+            <span id="eraser-size-value">20</span>
+        </div>
+        <button id="brush-tool" class="active">Brush</button>
+        <button id="eraser-tool">Eraser</button>
         <button id="clear-canvas">Clear Canvas</button>
     </div>
 
@@ -82,9 +92,14 @@
         const colorPicker = document.getElementById('color-picker');
         const brushSize = document.getElementById('brush-size');
         const brushSizeValue = document.getElementById('brush-size-value');
+        const eraserSize = document.getElementById('eraser-size');
+        const eraserSizeValue = document.getElementById('eraser-size-value');
         const clearButton = document.getElementById('clear-canvas');
+        const brushTool = document.getElementById('brush-tool');
+        const eraserTool = document.getElementById('eraser-tool');
 
         let isDrawing = false;
+        let isErasing = false;
 
         canvas.addEventListener('mousedown', startDrawing);
         canvas.addEventListener('mousemove', draw);
@@ -93,6 +108,9 @@
 
         clearButton.addEventListener('click', clearCanvas);
         brushSize.addEventListener('input', updateBrushSize);
+        eraserSize.addEventListener('input', updateEraserSize);
+        brushTool.addEventListener('click', activateBrush);
+        eraserTool.addEventListener('click', activateEraser);
 
         function startDrawing(e) {
             isDrawing = true;
@@ -102,9 +120,9 @@
         function draw(e) {
             if (!isDrawing) return;
 
-            ctx.lineWidth = brushSize.value;
+            ctx.lineWidth = isErasing ? eraserSize.value : brushSize.value;
             ctx.lineCap = 'round';
-            ctx.strokeStyle = colorPicker.value;
+            ctx.strokeStyle = isErasing ? '#f0f0f0' : colorPicker.value;
 
             ctx.lineTo(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
             ctx.stroke();
@@ -123,6 +141,22 @@
 
         function updateBrushSize() {
             brushSizeValue.textContent = brushSize.value;
+        }
+
+        function updateEraserSize() {
+            eraserSizeValue.textContent = eraserSize.value;
+        }
+
+        function activateBrush() {
+            isErasing = false;
+            brushTool.classList.add('active');
+            eraserTool.classList.remove('active');
+        }
+
+        function activateEraser() {
+            isErasing = true;
+            eraserTool.classList.add('active');
+            brushTool.classList.remove('active');
         }
     </script>
 </body>
