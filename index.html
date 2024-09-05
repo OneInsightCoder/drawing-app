@@ -12,12 +12,14 @@
             flex-direction: column;
             align-items: center;
             background-color: #f0f0f0;
+            touch-action: none;
         }
         #canvas {
             border: 2px solid #333;
             border-radius: 8px;
             cursor: crosshair;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            touch-action: none;
         }
         #controls {
             display: flex;
@@ -110,6 +112,11 @@
         let isDrawing = false;
         let isErasing = false;
 
+        canvas.addEventListener('touchstart', startDrawing);
+        canvas.addEventListener('touchmove', draw);
+        canvas.addEventListener('touchend', stopDrawing);
+        canvas.addEventListener('touchcancel', stopDrawing);
+
         canvas.addEventListener('mousedown', startDrawing);
         canvas.addEventListener('mousemove', draw);
         canvas.addEventListener('mouseup', stopDrawing);
@@ -129,14 +136,27 @@
         function draw(e) {
             if (!isDrawing) return;
 
+            e.preventDefault();
+
+            let x, y;
+
+            if (e.type.startsWith('touch')) {
+                const rect = canvas.getBoundingClientRect();
+                x = e.touches[0].clientX - rect.left;
+                y = e.touches[0].clientY - rect.top;
+            } else {
+                x = e.clientX - canvas.offsetLeft;
+                y = e.clientY - canvas.offsetTop;
+            }
+
             ctx.lineWidth = isErasing ? eraserSize.value : brushSize.value;
             ctx.lineCap = 'round';
             ctx.strokeStyle = isErasing ? '#f0f0f0' : colorPicker.value;
 
-            ctx.lineTo(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
+            ctx.lineTo(x, y);
             ctx.stroke();
             ctx.beginPath();
-            ctx.moveTo(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
+            ctx.moveTo(x, y);
         }
 
         function stopDrawing() {
@@ -167,6 +187,23 @@
             eraserTool.classList.add('active');
             brushTool.classList.remove('active');
         }
+
+        // Prevent scrolling when touching the canvas
+        document.body.addEventListener("touchstart", function (e) {
+            if (e.target == canvas) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        document.body.addEventListener("touchend", function (e) {
+            if (e.target == canvas) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        document.body.addEventListener("touchmove", function (e) {
+            if (e.target == canvas) {
+                e.preventDefault();
+            }
+        }, { passive: false });
     </script>
 </body>
 </html>
