@@ -295,19 +295,23 @@
 
             if (colorMatch(targetColor, fillColor)) return;
 
-            const pixelsToCheck = [x, y];
-            while (pixelsToCheck.length > 0) {
-                const y = pixelsToCheck.pop();
-                const x = pixelsToCheck.pop();
+            const pixelsToCheck = [[x, y]];
+            const maxPixels = canvas.width * canvas.height;
+            let pixelsChecked = 0;
+
+            while (pixelsToCheck.length > 0 && pixelsChecked < maxPixels) {
+                const [x, y] = pixelsToCheck.pop();
 
                 const currentColor = getPixel(imageData, x, y);
                 if (colorMatch(currentColor, targetColor)) {
                     setPixel(imageData, x, y, fillColor);
-                    pixelsToCheck.push(x + 1, y);
-                    pixelsToCheck.push(x - 1, y);
-                    pixelsToCheck.push(x, y + 1);
-                    pixelsToCheck.push(x, y - 1);
+                    if (x > 0) pixelsToCheck.push([x - 1, y]);
+                    if (x < canvas.width - 1) pixelsToCheck.push([x + 1, y]);
+                    if (y > 0) pixelsToCheck.push([x, y - 1]);
+                    if (y < canvas.height - 1) pixelsToCheck.push([x, y + 1]);
                 }
+
+                pixelsChecked++;
             }
 
             ctx.putImageData(imageData, 0, 0);
