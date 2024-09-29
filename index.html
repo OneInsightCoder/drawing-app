@@ -9,10 +9,25 @@
         body {
             font-family: Arial, sans-serif;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             background-color: #f0f0f0;
             touch-action: none;
+            margin: 0;
+            padding: 0;
+        }
+        #sidebar {
+            width: 60px;
+            background-color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+        }
+        #main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
         }
         #canvas, #pixel-canvas {
             border: 2px solid #333;
@@ -52,7 +67,7 @@
             background-color: #4CAF50;
             border: none;
             color: white;
-            padding: 10px 20px;
+            padding: 10px;
             text-align: center;
             text-decoration: none;
             display: inline-block;
@@ -72,47 +87,112 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            width: 40px;
+            height: 40px;
+            margin-bottom: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background-color 0.3s;
         }
-        .tool-button i {
-            margin-right: 5px;
+        .tool-button:hover {
+            background-color: #45a049;
+        }
+        .tool-button.active {
+            background-color: #45a049;
+        }
+        .popup {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .popup-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
-    <h1>Fancy Drawing App</h1>
-    <canvas id="canvas"></canvas>
-    <canvas id="pixel-canvas" width="1000" height="1000"></canvas>
-    <div id="controls">
-        <div class="control-group">
-            <label for="canvas-width">Canvas Width:</label>
-            <input type="number" id="canvas-width" min="100" max="2000" value="800">
+    <div id="sidebar">
+        <button id="spray-tool" class="tool-button" title="Spray"><i class="fas fa-spray-can"></i></button>
+        <button id="pencil-tool" class="tool-button" title="Pencil"><i class="fas fa-pencil-alt"></i></button>
+        <button id="eraser-tool" class="tool-button" title="Eraser"><i class="fas fa-eraser"></i></button>
+        <button id="fill-tool" class="tool-button" title="Fill"><i class="fas fa-fill-drip"></i></button>
+        <button id="pixel-art-toggle" class="tool-button" title="Pixel Art"><i class="fas fa-th"></i></button>
+        <button id="resize-canvas-button" class="tool-button" title="Resize Canvas"><i class="fas fa-expand-arrows-alt"></i></button>
+    </div>
+    <div id="main-content">
+        <h1>Fancy Drawing App</h1>
+        <canvas id="canvas"></canvas>
+        <canvas id="pixel-canvas" width="1000" height="1000"></canvas>
+        <div id="controls">
+            <div class="control-group">
+                <label for="color-picker">Color:</label>
+                <input type="color" id="color-picker" value="#000000">
+            </div>
+            <div class="control-group">
+                <label for="brush-size">Brush Size:</label>
+                <input type="range" id="brush-size" min="1" max="50" value="5">
+                <span id="brush-size-value">5</span>
+            </div>
+            <div class="control-group">
+                <label for="eraser-size">Eraser Size:</label>
+                <input type="range" id="eraser-size" min="1" max="50" value="20">
+                <span id="eraser-size-value">20</span>
+            </div>
+            <button id="clear-canvas">Clear Canvas</button>
         </div>
-        <div class="control-group">
-            <label for="canvas-height">Canvas Height:</label>
-            <input type="number" id="canvas-height" min="100" max="2000" value="600">
+    </div>
+
+    <div id="resize-popup" class="popup">
+        <div class="popup-content">
+            <span class="close">&times;</span>
+            <h2>Resize Canvas</h2>
+            <div class="control-group">
+                <label for="canvas-width">Canvas Width:</label>
+                <input type="number" id="canvas-width" min="100" max="2000" value="800">
+            </div>
+            <div class="control-group">
+                <label for="canvas-height">Canvas Height:</label>
+                <input type="number" id="canvas-height" min="100" max="2000" value="600">
+            </div>
+            <button id="resize-canvas">Resize Canvas</button>
         </div>
-        <button id="resize-canvas">Resize Canvas</button>
-        <div class="control-group">
-            <label for="color-picker">Color:</label>
-            <input type="color" id="color-picker" value="#000000">
+    </div>
+
+    <div id="pixel-art-popup" class="popup">
+        <div class="popup-content">
+            <span class="close">&times;</span>
+            <h2>Pixel Art Mode</h2>
+            <p>Pixel Art Mode allows you to create pixel-perfect drawings. Each pixel is enlarged for easier editing.</p>
+            <button id="toggle-pixel-art">Toggle Pixel Art Mode</button>
         </div>
-        <div class="control-group">
-            <label for="brush-size">Brush Size:</label>
-            <input type="range" id="brush-size" min="1" max="50" value="5">
-            <span id="brush-size-value">5</span>
-        </div>
-        <div class="control-group">
-            <label for="eraser-size">Eraser Size:</label>
-            <input type="range" id="eraser-size" min="1" max="50" value="20">
-            <span id="eraser-size-value">20</span>
-        </div>
-        <button id="brush-tool" class="active tool-button"><i class="fas fa-paint-brush"></i> Brush</button>
-        <button id="spray-tool" class="tool-button"><i class="fas fa-spray-can"></i> Spray</button>
-        <button id="pencil-tool" class="tool-button"><i class="fas fa-pencil-alt"></i> Pencil</button>
-        <button id="eraser-tool" class="tool-button"><i class="fas fa-eraser"></i> Eraser</button>
-        <button id="fill-tool" class="tool-button"><i class="fas fa-fill-drip"></i> Fill</button>
-        <button id="clear-canvas">Clear Canvas</button>
-        <button id="pixel-art-toggle" class="tool-button"><i class="fas fa-th"></i> Pixel Art</button>
     </div>
 
     <script>
@@ -126,7 +206,6 @@
         const eraserSize = document.getElementById('eraser-size');
         const eraserSizeValue = document.getElementById('eraser-size-value');
         const clearButton = document.getElementById('clear-canvas');
-        const brushTool = document.getElementById('brush-tool');
         const sprayTool = document.getElementById('spray-tool');
         const pencilTool = document.getElementById('pencil-tool');
         const eraserTool = document.getElementById('eraser-tool');
@@ -135,9 +214,13 @@
         const canvasHeight = document.getElementById('canvas-height');
         const resizeCanvasButton = document.getElementById('resize-canvas');
         const pixelArtToggle = document.getElementById('pixel-art-toggle');
+        const resizePopup = document.getElementById('resize-popup');
+        const pixelArtPopup = document.getElementById('pixel-art-popup');
+        const resizeCanvasOpenButton = document.getElementById('resize-canvas-button');
+        const togglePixelArtButton = document.getElementById('toggle-pixel-art');
 
         let isDrawing = false;
-        let currentTool = 'brush';
+        let currentTool = 'pencil';
         let isPixelArtMode = false;
 
         // Initialize canvas size
@@ -162,13 +245,34 @@
         clearButton.addEventListener('click', clearCanvas);
         brushSize.addEventListener('input', updateBrushSize);
         eraserSize.addEventListener('input', updateEraserSize);
-        brushTool.addEventListener('click', () => activateTool('brush'));
         sprayTool.addEventListener('click', () => activateTool('spray'));
         pencilTool.addEventListener('click', () => activateTool('pencil'));
         eraserTool.addEventListener('click', () => activateTool('eraser'));
         fillTool.addEventListener('click', () => activateTool('fill'));
         resizeCanvasButton.addEventListener('click', resizeCanvas);
-        pixelArtToggle.addEventListener('click', togglePixelArtMode);
+        pixelArtToggle.addEventListener('click', () => openPopup(pixelArtPopup));
+        resizeCanvasOpenButton.addEventListener('click', () => openPopup(resizePopup));
+        togglePixelArtButton.addEventListener('click', togglePixelArtMode);
+
+        // Close popups when clicking on the close button or outside the popup
+        document.querySelectorAll('.close, .popup').forEach(element => {
+            element.addEventListener('click', (e) => {
+                if (e.target === element) {
+                    closePopups();
+                }
+            });
+        });
+
+        function openPopup(popup) {
+            closePopups();
+            popup.style.display = 'block';
+        }
+
+        function closePopups() {
+            document.querySelectorAll('.popup').forEach(popup => {
+                popup.style.display = 'none';
+            });
+        }
 
         function startDrawing(e) {
             isDrawing = true;
@@ -200,12 +304,6 @@
             ctx.strokeStyle = currentTool === 'eraser' ? '#f0f0f0' : colorPicker.value;
 
             switch (currentTool) {
-                case 'brush':
-                    ctx.lineTo(x, y);
-                    ctx.stroke();
-                    ctx.beginPath();
-                    ctx.moveTo(x, y);
-                    break;
                 case 'spray':
                     for (let i = 0; i < 20; i++) {
                         let offsetX = Math.random() * 20 - 10;
@@ -215,11 +313,6 @@
                     }
                     break;
                 case 'pencil':
-                    ctx.lineTo(x, y);
-                    ctx.stroke();
-                    ctx.beginPath();
-                    ctx.moveTo(x, y);
-                    break;
                 case 'eraser':
                     ctx.lineTo(x, y);
                     ctx.stroke();
@@ -252,7 +345,7 @@
 
         function activateTool(tool) {
             currentTool = tool;
-            [brushTool, sprayTool, pencilTool, eraserTool, fillTool].forEach(btn => btn.classList.remove('active'));
+            [sprayTool, pencilTool, eraserTool, fillTool].forEach(btn => btn.classList.remove('active'));
             document.getElementById(`${tool}-tool`).classList.add('active');
         }
 
@@ -276,6 +369,8 @@
             
             // Draw the old content onto the resized canvas
             ctx.drawImage(tempCanvas, 0, 0);
+
+            closePopups();
         }
 
         function floodFill(e) {
@@ -295,19 +390,23 @@
 
             if (colorMatch(targetColor, fillColor)) return;
 
-            const pixelsToCheck = [x, y];
-            while (pixelsToCheck.length > 0) {
-                const y = pixelsToCheck.pop();
-                const x = pixelsToCheck.pop();
+            const pixelsToCheck = [[x, y]];
+            const maxPixels = canvas.width * canvas.height;
+            let pixelsChecked = 0;
+
+            while (pixelsToCheck.length > 0 && pixelsChecked < maxPixels) {
+                const [x, y] = pixelsToCheck.pop();
 
                 const currentColor = getPixel(imageData, x, y);
                 if (colorMatch(currentColor, targetColor)) {
                     setPixel(imageData, x, y, fillColor);
-                    pixelsToCheck.push(x + 1, y);
-                    pixelsToCheck.push(x - 1, y);
-                    pixelsToCheck.push(x, y + 1);
-                    pixelsToCheck.push(x, y - 1);
+                    if (x > 0) pixelsToCheck.push([x - 1, y]);
+                    if (x < canvas.width - 1) pixelsToCheck.push([x + 1, y]);
+                    if (y > 0) pixelsToCheck.push([x, y - 1]);
+                    if (y < canvas.height - 1) pixelsToCheck.push([x, y + 1]);
                 }
+
+                pixelsChecked++;
             }
 
             ctx.putImageData(imageData, 0, 0);
