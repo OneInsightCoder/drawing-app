@@ -14,6 +14,10 @@
             margin: 0;
             padding: 0;
         }
+        body.dark-mode {
+            background-color: #333;
+            color: #f0f0f0;
+        }
         #sidebar {
             width: 60px;
             background-color: #333;
@@ -21,6 +25,9 @@
             flex-direction: column;
             align-items: center;
             padding: 20px 0;
+        }
+        body.dark-mode #sidebar {
+            background-color: #444;
         }
         #main-content {
             flex-grow: 1;
@@ -35,6 +42,7 @@
             cursor: crosshair;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             touch-action: none;
+            background-color: white;
         }
         #pixel-canvas {
             display: none;
@@ -52,6 +60,10 @@
             padding: 15px;
             border-radius: 8px;
             box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+        body.dark-mode .control-group {
+            background-color: #444;
+            color: #f0f0f0;
         }
         #color-picker {
             width: 50px;
@@ -103,6 +115,15 @@
         .tool-button.active {
             background-color: #45a049;
         }
+        body.dark-mode .tool-button {
+            background-color: #555;
+        }
+        body.dark-mode .tool-button:hover {
+            background-color: #666;
+        }
+        body.dark-mode .tool-button.active {
+            background-color: #666;
+        }
         .popup {
             display: none;
             position: fixed;
@@ -146,6 +167,8 @@
         <button id="fill-tool" class="tool-button" title="Fill"><i class="fas fa-fill-drip"></i></button>
         <button id="pixel-art-toggle" class="tool-button" title="Pixel Art"><i class="fas fa-th"></i></button>
         <button id="resize-canvas-button" class="tool-button" title="Resize Canvas"><i class="fas fa-expand-arrows-alt"></i></button>
+        <button id="save-canvas-button" class="tool-button" title="Save Canvas"><i class="fas fa-save"></i></button>
+        <button id="settings-button" class="tool-button" title="Settings"><i class="fas fa-cog"></i></button>
     </div>
     <div id="main-content">
         <h1>Fancy Drawing App</h1>
@@ -195,6 +218,30 @@
         </div>
     </div>
 
+    <div id="settings-popup" class="popup">
+        <div class="popup-content">
+            <span class="close">&times;</span>
+            <h2>Settings</h2>
+            <div class="control-group">
+                <label for="toolbar-position">Toolbar Position:</label>
+                <select id="toolbar-position">
+                    <option value="left">Left</option>
+                    <option value="right">Right</option>
+                    <option value="top">Top</option>
+                    <option value="bottom">Bottom</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="theme">Theme:</label>
+                <select id="theme">
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                </select>
+            </div>
+            <button id="apply-settings">Apply Settings</button>
+        </div>
+    </div>
+
     <script>
         const canvas = document.getElementById('canvas');
         const pixelCanvas = document.getElementById('pixel-canvas');
@@ -218,17 +265,54 @@
         const pixelArtPopup = document.getElementById('pixel-art-popup');
         const resizeCanvasOpenButton = document.getElementById('resize-canvas-button');
         const togglePixelArtButton = document.getElementById('toggle-pixel-art');
+        const saveCanvasButton = document.getElementById('save-canvas-button');
+        const settingsButton = document.getElementById('settings-button');
+        const settingsPopup = document.getElementById('settings-popup');
+        const toolbarPosition = document.getElementById('toolbar-position');
+        const theme = document.getElementById('theme');
+        const applySettingsButton = document.getElementById('apply-settings');
 
         let isDrawing = false;
         let currentTool = 'pencil';
         let isPixelArtMode = false;
+        let lastDoubleTapTime = 0;
+        let lastPressure = 0;
+        const tools = ['pencil', 'eraser', 'spray', 'fill'];
+        let currentToolIndex = 0;
 
         // Initialize canvas size
         canvas.width = canvasWidth.value;
         canvas.height = canvasHeight.value;
 
-        canvas.addEventListener('touchstart', startDrawing);
-        canvas.addEventListener('touchmove', draw);
+        // Apple Pencil double tap detection
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches[0].touchType === 'stylus') {
+                const now = Date.now();
+                if (now - lastDoubleTapTime < 300) {
+                    // Double tap detected - cycle through tools
+                    currentToolIndex = (currentToolIndex + 1) % tools.length;
+                    activateTool(tools[currentToolIndex]);
+                }
+                lastDoubleTapTime = now;
+            }
+            startDrawing(e);
+        });
+
+        // Apple Pencil pressure detection
+        canvas.addEventListener('touchmove', (e) => {
+            if (e.touches[0].touchType === 'stylus' && e.touches[0].force !== undefined) {
+                const pressure = e.touches[0].force;
+                
+                // Detect significant pressure change (squeeze)
+                if (Math.abs(pressure - lastPressure) > 0.3) {
+                    currentToolIndex = (currentToolIndex + 1) % tools.length;
+                    activateTool(tools[currentToolIndex]);
+                }
+                lastPressure = pressure;
+            }
+            draw(e);
+        });
+
         canvas.addEventListener('touchend', stopDrawing);
         canvas.addEventListener('touchcancel', stopDrawing);
 
@@ -253,6 +337,9 @@
         pixelArtToggle.addEventListener('click', () => openPopup(pixelArtPopup));
         resizeCanvasOpenButton.addEventListener('click', () => openPopup(resizePopup));
         togglePixelArtButton.addEventListener('click', togglePixelArtMode);
+        saveCanvasButton.addEventListener('click', saveCanvas);
+        settingsButton.addEventListener('click', () => openPopup(settingsPopup));
+        applySettingsButton.addEventListener('click', applySettings);
 
         // Close popups when clicking on the close button or outside the popup
         document.querySelectorAll('.close, .popup').forEach(element => {
@@ -469,6 +556,65 @@
 
             pixelCtx.fillStyle = colorPicker.value;
             pixelCtx.fillRect(x, y, 1, 1);
+        }
+
+        function saveCanvas() {
+            const link = document.createElement('a');
+            link.download = 'canvas.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        function applySettings() {
+            const position = toolbarPosition.value;
+            const selectedTheme = theme.value;
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+
+            sidebar.style.position = 'absolute';
+            sidebar.style.top = '';
+            sidebar.style.bottom = '';
+            sidebar.style.left = '';
+            sidebar.style.right = '';
+
+            switch (position) {
+                case 'left':
+                    sidebar.style.left = '0';
+                    sidebar.style.top = '0';
+                    sidebar.style.bottom = '0';
+                    sidebar.style.width = '60px';
+                    mainContent.style.marginLeft = '60px';
+                    break;
+                case 'right':
+                    sidebar.style.right = '0';
+                    sidebar.style.top = '0';
+                    sidebar.style.bottom = '0';
+                    sidebar.style.width = '60px';
+                    mainContent.style.marginRight = '60px';
+                    break;
+                case 'top':
+                    sidebar.style.top = '0';
+                    sidebar.style.left = '0';
+                    sidebar.style.right = '0';
+                    sidebar.style.height = '60px';
+                    mainContent.style.marginTop = '60px';
+                    break;
+                case 'bottom':
+                    sidebar.style.bottom = '0';
+                    sidebar.style.left = '0';
+                    sidebar.style.right = '0';
+                    sidebar.style.height = '60px';
+                    mainContent.style.marginBottom = '60px';
+                    break;
+            }
+
+            if (selectedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+
+            closePopups();
         }
 
         // Prevent scrolling when touching the canvas
